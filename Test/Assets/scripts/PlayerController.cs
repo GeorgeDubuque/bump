@@ -6,7 +6,10 @@ public class PlayerController : MonoBehaviour {
 
 	//Movement parameters
 	public float move;
+    private bool moveDown;
 	private float accel;
+    private float moveDownAccel;
+    private float moveDownTopSpeed;
 	private float topSpeed = 5;
 	private float jumpPower;
 	private Rigidbody2D rb;
@@ -29,6 +32,7 @@ public class PlayerController : MonoBehaviour {
 	public KeyCode rightBumpKey;
 	public KeyCode leftBumbKey;
 	public KeyCode jumpKey;
+    public KeyCode downKey;
 
 
 
@@ -53,6 +57,8 @@ public class PlayerController : MonoBehaviour {
 		jumpPower = gm.jumpPower;
 		doubleClickThreshold = gm.doubleClickThreshold;
 		numJumps = gm.numJumps;
+        moveDownAccel = gm.moveDownAccel;
+        moveDownTopSpeed = gm.moveDownTopSpeed;
 	}
 
 	void FixedUpdate(){
@@ -63,9 +69,17 @@ public class PlayerController : MonoBehaviour {
 		if (move > 0 && rb.velocity.x < topSpeed){
 			rb.AddForce (new Vector2 (move * accel, 0), ForceMode2D.Impulse);
 		}
+        Debug.Log("moveDown == true: " + moveDown);
+        Debug.Log("!grounded: " + !grounded);
+        Debug.Log("rb.velocity.y: " + rb.velocity.y);
+        if (moveDown && !grounded && rb.velocity.y > -moveDownTopSpeed)
+        {
+            Debug.Log("moving down");
+            rb.AddForce(Vector2.down * (moveDownAccel), ForceMode2D.Impulse);
+        }
 
-		//does the player want to jump and have jumps left
-		if (jumping && jumpCount < numJumps) {
+        //does the player want to jump and have jumps left
+        if (jumping && jumpCount < numJumps) {
 
 			jumpCount++;
 			rb.velocity = new Vector2 (rb.velocity.x, 0);
@@ -75,16 +89,17 @@ public class PlayerController : MonoBehaviour {
 	
 	void Update () {
 		jumping = Input.GetKeyDown(jumpKey);
-		IsGrounded ();
-
-		//Check for double click on bump keys
-		if (Bumped (rightBumpKey)) {
+		grounded = IsGrounded();
+        move = Input.GetAxis(controlAxis);
+        moveDown = Input.GetKey(downKey);
+        //Check for double click on bump keys
+        if (Bumped (rightBumpKey)) {
 			anim.SetTrigger("RightBump");
 		}
 		if (Bumped (leftBumbKey)) {
 			anim.SetTrigger("LeftBump");
 		}
-		move = Input.GetAxis(controlAxis);
+		
 	}
 
 	/*
@@ -134,7 +149,7 @@ public class PlayerController : MonoBehaviour {
 	/*
 	 * Checks if gameobject is grounded 
 	 */ 
-	void IsGrounded() {
+	bool IsGrounded() {
 		Vector2 position = transform.position;
 		Vector2 direction = Vector2.down;
 		float distance = (coll.size.y / 2) + .04f;
@@ -142,7 +157,9 @@ public class PlayerController : MonoBehaviour {
 		RaycastHit2D hit = Physics2D.Raycast(position, direction, distance, groundLayer);
 		if (hit.collider != null) {
 			jumpCount = 0;
+            return true;
 		}
+        return false;
 	}
 		
 }

@@ -17,6 +17,8 @@ public class GameManager : MonoBehaviour {
 	public RectTransform levelBounds;
 	public float jumpPower;
 	public float topSpeed;
+    public float moveDownAccel;
+    public float moveDownTopSpeed;
 	public float accel;
 	public float doubleClickThreshold;
 	public float bumpPower;
@@ -54,8 +56,9 @@ public class GameManager : MonoBehaviour {
 				Destroy (players [0]);
 //				Time.timeScale = .5f;
 				roundOver = true;
-				DisplayWinnerText (2);
-			} else {
+                StartCoroutine(DisplayWinnerText(2));
+            }
+            else {
 				players [0].transform.position = spawn;
 			}
 			p1Lives [p1CurrLife].SetActive (false);
@@ -68,7 +71,7 @@ public class GameManager : MonoBehaviour {
 				Destroy (players [1]);
 				//Time.timeScale = .5f;
 				roundOver = true;
-				DisplayWinnerText (1);
+				StartCoroutine(DisplayWinnerText(1));
 			} else {
 				players [1].transform.position = spawn;
 			}
@@ -78,7 +81,7 @@ public class GameManager : MonoBehaviour {
 
 	}
 
-	void DisplayWinnerText(int winner){
+	IEnumerator DisplayWinnerText(int winner){
         winnerText.SetActive(true);
         TextMeshProUGUI winnerMesh = winnerText.GetComponent<TextMeshProUGUI> ();
 		if (winner == 1) {
@@ -88,7 +91,9 @@ public class GameManager : MonoBehaviour {
 			winnerMesh.text = "blue";
             winnerMesh.color = p2Color;
 		}
+        yield return new WaitForSeconds(1);
 
+        DisplayWinText();
 		
 	}
 
