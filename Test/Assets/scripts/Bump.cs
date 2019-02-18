@@ -14,6 +14,7 @@ public class Bump : MonoBehaviour {
 	private float audioCool;
 	public float audioCoolTime = 1;
 	public PlayerController pc;
+    public float charge;
 
 	void Start(){
 		gm = FindObjectOfType<GameManager> ();
@@ -24,7 +25,6 @@ public class Bump : MonoBehaviour {
 	}
 
 	public void SetBumpedLeft(){
-		Debug.Log ("bumpedLeft");
 		bumpedLeft = !bumpedLeft;
 	}
 
@@ -49,7 +49,9 @@ public class Bump : MonoBehaviour {
 				if (bumpedRight) {
 					dir = Vector2.right;
 				}
-				gameObj.GetComponent<Rigidbody2D>().AddForce(dir * bumpPower, ForceMode2D.Impulse);
+                Debug.Log(bumpPower * pc.charge);
+				gameObj.GetComponent<Rigidbody2D>().AddForce(dir * (bumpPower * pc.charge), ForceMode2D.Impulse);
+                pc.charge = 1;
 			}
 
 		}

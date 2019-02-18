@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour {
 	public float doubleClickThreshold;
 	public float bumpPower;
 	public int numJumps;
+    public float maxCharge = 2;
+    public float chargeRate = .1f;
 	public GameObject winnerText;
 	public GameObject winText;
 
@@ -34,24 +36,25 @@ public class GameManager : MonoBehaviour {
 	private int p2CurrLife;
 	public bool roundOver = false;
 
+    public AudioSource deathSound;
+
 	void Start(){
 		p1CurrLife = p1Lives.Length - 1;
 		p2CurrLife = p2Lives.Length - 1;
 	}
 
 	void Update(){
-		if (!roundOver) {
-			IsRoundOver ();
-		} else {
+		//if (!roundOver) {
+		//	IsRoundOver ();
+		//} else {
 
-		}
+		//}
 	}
 
 	void IsRoundOver(){
 
 		if (!levelBounds.rect.Contains (players [0].transform.position)) {
 			if (p1CurrLife == 0) {
-				Debug.Log ("Blue Wins!");
 				//SceneManager.LoadScene (SceneManager.GetActiveScene ().name);
 				Destroy (players [0]);
 //				Time.timeScale = .5f;
@@ -59,20 +62,23 @@ public class GameManager : MonoBehaviour {
                 StartCoroutine(DisplayWinnerText(2));
             }
             else {
-				players [0].transform.position = spawn;
+                deathSound.Play();
+                players[0].GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                players [0].transform.position = spawn;
 			}
 			p1Lives [p1CurrLife].SetActive (false);
 			p1CurrLife--;
 
 		}else if (!levelBounds.rect.Contains (players [1].transform.position)) {
 			if (p2CurrLife == 0) {
-				Debug.Log ("Orange Wins!");
 				//SceneManager.LoadScene (SceneManager.GetActiveScene ().name);
 				Destroy (players [1]);
 				//Time.timeScale = .5f;
 				roundOver = true;
 				StartCoroutine(DisplayWinnerText(1));
 			} else {
+                deathSound.Play();
+                players[1].GetComponent<Rigidbody2D>().velocity = Vector2.zero;
 				players [1].transform.position = spawn;
 			}
 			p2Lives [p2CurrLife].SetActive (false);
@@ -88,16 +94,53 @@ public class GameManager : MonoBehaviour {
 			winnerMesh.text = "orange";
             winnerMesh.color = p1Color;
 		} else {
-			winnerMesh.text = "blue";
+			winnerMesh.text = "green";
             winnerMesh.color = p2Color;
 		}
         yield return new WaitForSeconds(1);
 
-        DisplayWinText();
+        StartCoroutine(DisplayWinText());
 		
 	}
 
-    public void DisplayWinText(){
+    public IEnumerator DisplayWinText(){
         winText.SetActive(true);
+        yield return new WaitForSeconds(5);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+    }
+
+
+    private void OnTriggerExit2D ( Collider2D collision ) {
+        if (collision.gameObject.name == "Player1") {
+            if (p1CurrLife == 0) {
+                //SceneManager.LoadScene (SceneManager.GetActiveScene ().name);
+                Destroy(players[0]);
+                //				Time.timeScale = .5f;
+                roundOver = true;
+                StartCoroutine(DisplayWinnerText(2));
+            } else {
+                deathSound.Play();
+                players[0].GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                players[0].transform.position = spawn;
+            }
+            p1Lives[p1CurrLife].SetActive(false);
+            p1CurrLife--;
+
+        } else if (collision.gameObject.name == "Player2") {
+            if (p2CurrLife == 0) {
+                //SceneManager.LoadScene (SceneManager.GetActiveScene ().name);
+                Destroy(players[1]);
+                //Time.timeScale = .5f;
+                roundOver = true;
+                StartCoroutine(DisplayWinnerText(1));
+            } else {
+                deathSound.Play();
+                players[1].GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                players[1].transform.position = spawn;
+            }
+            p2Lives[p2CurrLife].SetActive(false);
+            p2CurrLife--;
+        }
     }
 }

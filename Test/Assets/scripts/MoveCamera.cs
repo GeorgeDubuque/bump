@@ -17,13 +17,13 @@ public class MoveCamera : MonoBehaviour {
 	void Start(){
 		gm = FindObjectOfType<GameManager> ();
 		cam = GetComponent<Camera> ();
-		SetRect ();
+		//SetRect ();
 		startSize = cam.orthographicSize;
 		origZ = transform.position.z;
 	}
 
 	private void Update() {
-		SetRect ();
+		//SetRect ();
 		SetCameraPos();
 	}
 
@@ -45,19 +45,13 @@ public class MoveCamera : MonoBehaviour {
 				float targetSize = (playerDistance + 5) * ((float)Screen.height / (float)Screen.width) * 0.5f;
 //				cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetSize, .1f);
 				cam.orthographicSize = targetSize;
-			}
+            } else {
+                cam.orthographicSize = startSize;
+            }
 		}
 
 		//take average:
 		middle /= numPlayers;
 		cam.transform.position = Vector3.Lerp(cam.transform.position, new Vector3(middle.x, middle.y, origZ), .1f);
 	}
-
-	void SetRect(){
-		float height = 2f * cam.orthographicSize;
-		float width = height * cam.aspect;		
-		viewRect.sizeDelta = new Vector2(width-2, height-2);
-	}
-
-
 }

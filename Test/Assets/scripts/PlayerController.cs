@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class PlayerController : MonoBehaviour {
 
@@ -12,7 +13,7 @@ public class PlayerController : MonoBehaviour {
     private float moveDownTopSpeed;
 	private float topSpeed = 5;
 	private float jumpPower;
-	private Rigidbody2D rb;
+	public Rigidbody2D rb;
 
 	public Animator anim;
 
@@ -25,12 +26,12 @@ public class PlayerController : MonoBehaviour {
 	private bool jumping = false;
 
 	//Bump Attack
-	private bool bump = false;
+	//private bool bump = false;
 
 	//Control parameters for player
 	public string controlAxis;
 	public KeyCode rightBumpKey;
-	public KeyCode leftBumbKey;
+	public KeyCode leftBumpKey;
 	public KeyCode jumpKey;
     public KeyCode downKey;
 
@@ -42,14 +43,28 @@ public class PlayerController : MonoBehaviour {
 	private int rightButtonCount;
 	private float leftButtonCooler;
 	private int leftButtonCount;
+    private bool charging = false;
+    public float charge = 1;
+    private KeyCode chargeKey;
+    private float maxCharge = 2;
+    private float chargeRate = .1f;
 
+    //Jump params
 	private int numJumps;
 	private int jumpCount = 0;
 
+    public Light pLight;
+    private float lightStart;
+
 	private GameManager gm;
+
+    public AudioSource chargeSound;
+    public AudioSource hitSound;
+    private Bump bump;
 
 
 	void Start () {
+        lightStart = pLight.intensity;
 		gm = FindObjectOfType<GameManager> ();
 		rb = GetComponent<Rigidbody2D> ();
 		accel = gm.accel;
@@ -59,6 +74,9 @@ public class PlayerController : MonoBehaviour {
 		numJumps = gm.numJumps;
         moveDownAccel = gm.moveDownAccel;
         moveDownTopSpeed = gm.moveDownTopSpeed;
+        chargeRate = gm.chargeRate;
+        maxCharge = gm.maxCharge;
+        bump = GetComponentInChildren<Bump>();
 	}
 
 	void FixedUpdate(){
@@ -69,12 +87,8 @@ public class PlayerController : MonoBehaviour {
 		if (move > 0 && rb.velocity.x < topSpeed){
 			rb.AddForce (new Vector2 (move * accel, 0), ForceMode2D.Impulse);
 		}
-        Debug.Log("moveDown == true: " + moveDown);
-        Debug.Log("!grounded: " + !grounded);
-        Debug.Log("rb.velocity.y: " + rb.velocity.y);
         if (moveDown && !grounded && rb.velocity.y > -moveDownTopSpeed)
         {
-            Debug.Log("moving down");
             rb.AddForce(Vector2.down * (moveDownAccel), ForceMode2D.Impulse);
         }
 
@@ -93,13 +107,45 @@ public class PlayerController : MonoBehaviour {
         move = Input.GetAxis(controlAxis);
         moveDown = Input.GetKey(downKey);
         //Check for double click on bump keys
-        if (Bumped (rightBumpKey)) {
-			anim.SetTrigger("RightBump");
-		}
-		if (Bumped (leftBumbKey)) {
-			anim.SetTrigger("LeftBump");
-		}
-		
+
+        if (charging && Input.GetKey(chargeKey)) {
+            if (!chargeSound.isPlaying) {
+                chargeSound.Play();
+            }
+            if(charge <= maxCharge) {
+                Debug.Log(1 + (chargeRate * Time.deltaTime));
+                charge += (chargeRate * Time.deltaTime);
+                pLight.intensity *= 1 + (chargeRate * Time.deltaTime);
+            }
+            move = 0;
+        }
+
+
+        Bumped(rightBumpKey);
+        Bumped(leftBumpKey);
+
+        if (charging && Input.GetKeyUp(chargeKey)) {
+            if (chargeKey == rightBumpKey) {
+                anim.SetTrigger("RightBump");
+                charging = false;
+                bump.charge = charge;
+            }
+            if (chargeKey == leftBumpKey) {
+                anim.SetTrigger("LeftBump");
+                charging = false;
+                bump.charge = charge;
+            }
+            if (chargeSound.isPlaying) {
+                chargeSound.Stop();
+                if (hitSound.isPlaying) {
+                    hitSound.Stop();
+                }
+                hitSound.Play();
+
+            }
+            //charge = 1;
+            pLight.intensity = lightStart;
+        }	
 	}
 
 	/*
@@ -108,48 +154,53 @@ public class PlayerController : MonoBehaviour {
 	 * 	KeyCode key: key to check for double click
 	 */
 	bool Bumped(KeyCode key){
-//		if (key == KeyCode.D) {
-			if (Input.GetKeyDown (key)) {
+        //		if (key == KeyCode.D) {
+        if (Input.GetKeyDown(key)) {
 
-				if (rightButtonCooler > 0 && rightButtonCount == 1/*Number of Taps you want Minus One*/) {
-					return true;
-				} else {
-					rightButtonCooler = doubleClickThreshold; 
-					rightButtonCount += 1;
-				}
-			}
+            if (rightButtonCooler > 0 && rightButtonCount == 1/*Number of Taps you want Minus One*/) {
+                chargeKey = key;
+                charging = true;
+                return true;
+            } else {
+                rightButtonCooler = doubleClickThreshold;
+                rightButtonCount += 1;
+            }
+        }
 
-			if (rightButtonCooler > 0) {
-				rightButtonCooler -= 1 * Time.deltaTime;
-			} else {
-				rightButtonCount = 0;
-			}
-//		} else {
-			if (Input.GetKeyDown (key)) {
+        if (rightButtonCooler > 0) {
+            rightButtonCooler -= 1 * Time.deltaTime;
+        } else {
+            rightButtonCount = 0;
+        }
+        //		} else {
+        if (Input.GetKeyDown(key)) {
 
-				if (leftButtonCooler > 0 && leftButtonCount == 1/*Number of Taps you want Minus One*/) {
-					return true;
-				} else {
-					leftButtonCooler = doubleClickThreshold; 
-					leftButtonCount += 1;
-				}
-			}
+            if (leftButtonCooler > 0 && leftButtonCount == 1/*Number of Taps you want Minus One*/) {
+                chargeKey = key;
+                charging = true;
+                return true;
+            } else {
+                leftButtonCooler = doubleClickThreshold;
+                leftButtonCount += 1;
+            }
+        }
 
-			if (leftButtonCooler > 0) {
-				leftButtonCooler -= 1 * Time.deltaTime;
-			} else {
-				leftButtonCount = 0;
-			}
-			return false;
-//		}
-
-	}
+        if (leftButtonCooler > 0) {
+            leftButtonCooler -= 1 * Time.deltaTime;
+        } else {
+            leftButtonCount = 0;
+        }
+        return false;
+        //		}
 
 
-	/*
+    }
+
+
+    /*
 	 * Checks if gameobject is grounded 
-	 */ 
-	bool IsGrounded() {
+	 */
+    bool IsGrounded() {
 		Vector2 position = transform.position;
 		Vector2 direction = Vector2.down;
 		float distance = (coll.size.y / 2) + .04f;
